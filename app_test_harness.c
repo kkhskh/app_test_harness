@@ -105,6 +105,7 @@ static int app_thread_fn(void *data)
 }
 
 /* Proc file operations */
+/* Replace this in harness_proc_show */
 static int harness_proc_show(struct seq_file *m, void *v)
 {
     int i;
@@ -112,23 +113,29 @@ static int harness_proc_show(struct seq_file *m, void *v)
     seq_printf(m, "App Test Harness Status:\n\n");
     
     for (i = 0; i < NUM_TEST_APPS; i++) {
+        int auto_pct = 0, manual_pct = 0, failed_pct = 0;
+        
+        /* Calculate integer percentages with one decimal place precision */
+        if (test_apps[i].num_trials > 0) {
+            auto_pct = test_apps[i].automatic_recovery * 1000 / test_apps[i].num_trials;
+            manual_pct = test_apps[i].manual_recovery * 1000 / test_apps[i].num_trials;
+            failed_pct = test_apps[i].failed_recovery * 1000 / test_apps[i].num_trials;
+        }
+        
         seq_printf(m, "App %d: %s (Driver: %s)\n", 
                    i, test_apps[i].name, test_apps[i].driver_class);
         seq_printf(m, "  Running: %s\n", 
                    test_apps[i].is_running ? "Yes" : "No");
         seq_printf(m, "  Trials: %d\n", test_apps[i].num_trials);
-        seq_printf(m, "  Automatic Recovery: %d (%.1f%%)\n", 
+        seq_printf(m, "  Automatic Recovery: %d (%d.%d%%)\n", 
                    test_apps[i].automatic_recovery,
-                   test_apps[i].num_trials > 0 ? 
-                      (float)test_apps[i].automatic_recovery * 100 / test_apps[i].num_trials : 0);
-        seq_printf(m, "  Manual Recovery: %d (%.1f%%)\n", 
+                   auto_pct / 10, auto_pct % 10);
+        seq_printf(m, "  Manual Recovery: %d (%d.%d%%)\n", 
                    test_apps[i].manual_recovery,
-                   test_apps[i].num_trials > 0 ? 
-                      (float)test_apps[i].manual_recovery * 100 / test_apps[i].num_trials : 0);
-        seq_printf(m, "  Failed Recovery: %d (%.1f%%)\n\n", 
+                   manual_pct / 10, manual_pct % 10);
+        seq_printf(m, "  Failed Recovery: %d (%d.%d%%)\n\n", 
                    test_apps[i].failed_recovery,
-                   test_apps[i].num_trials > 0 ? 
-                      (float)test_apps[i].failed_recovery * 100 / test_apps[i].num_trials : 0);
+                   failed_pct / 10, failed_pct % 10);
     }
     
     return 0;
